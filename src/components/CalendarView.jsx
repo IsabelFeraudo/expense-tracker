@@ -7,14 +7,12 @@ import {
   format,
   addYears,
   subYears,
-  eachDayOfInterval,
-  isBefore,
-  isAfter,
-  startOfDay, // Added for normalization
+  startOfDay,
 } from "date-fns";
 import enUS from "date-fns/locale/en-US";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { useStore } from "../store";
+import { computeDailyBalances } from "../utils/calcDailyBalances";
 
 const locales = {
   "en-US": enUS,
@@ -35,7 +33,7 @@ export default function CalendarView({
 }) {
   const transactions = useStore((state) => state.transactions);
 
-  // Determine a wide range for balance calculation (2 years buffer around transactions)
+  // Determinar rango amplio para balances
   const getWideRange = useMemo(() => {
     if (transactions.length === 0) {
       const now = new Date();
@@ -45,7 +43,7 @@ export default function CalendarView({
       };
     }
 
-    // Find min and max transaction dates (normalize to start of day)
+    // Normalizamos cada fecha a local startOfDay
     const txDates = transactions.map((tx) =>
       startOfDay(parse(tx.date, "yyyy-MM-dd", new Date()))
     );
@@ -58,60 +56,47 @@ export default function CalendarView({
     return { start, end };
   }, [transactions]);
 
-  // Calculate daily balances for the wide range (cumulative up to each day)
+  // Calcular balances diarios acumulados
   const dailyBalances = useMemo(() => {
     const { start, end } = getWideRange;
-    const days = eachDayOfInterval({ start, end });
-
-    // Sort transactions by date ascending (normalize dates for comparison)
-    const sortedTx = [...transactions]
-      .map((tx) => ({
-        ...tx,
-        normalizedDate: startOfDay(parse(tx.date, "yyyy-MM-dd", new Date())),
-      }))
-      .sort((a, b) => a.normalizedDate - b.normalizedDate);
-
-    // Accumulate balance day by day
-    let balance = 0;
-    const balancesMap = {};
-    let txIndex = 0;
-
-    days.forEach((day) => {
-      const normalizedDay = startOfDay(day); // Normalize to start of day
-      const dayStr = format(normalizedDay, "yyyy-MM-dd"); // Consistent string format
-
-      // Process all transactions up to and including this day
-      while (
-        txIndex < sortedTx.length &&
-        sortedTx[txIndex].normalizedDate <= normalizedDay
-      ) {
-        const tx = sortedTx[txIndex];
-        balance += tx.type === "income" ? tx.amount : -tx.amount;
-        txIndex++;
-      }
-
-      balancesMap[dayStr] = balance;
+    const normStart = startOfDay(start);
+    const normEnd = startOfDay(end);
+    return computeDailyBalances(transactions, {
+      start: normStart,
+      end: normEnd,
+      startingBalance: 0,
     });
-
-    return balancesMap;
   }, [transactions, getWideRange]);
 
-  // Create events for react-big-calendar (one per day in the range)
+  // Crear eventos del calendario (cada día = balance acumulado)
   const events = useMemo(() => {
-    return Object.entries(dailyBalances).map(([dateStr, balance]) => ({
-      title: `$${balance.toFixed(2)}`,
-      start: startOfDay(new Date(dateStr)), // Normalize event start
-      end: startOfDay(new Date(dateStr)), // Normalize event end
-      allDay: true,
-      balance,
-      dateStr,
-    }));
+    return Object.entries(dailyBalances).map(([dateStr, balance]) => {
+      // parse en local, no UTC
+      const eventDate = parse(dateStr, "yyyy-MM-dd", new Date());
+      return {
+        title: `$${balance.toFixed(2)}`,
+        start: startOfDay(eventDate),
+        end: startOfDay(eventDate),
+        allDay: true,
+        balance,
+        dateStr,
+      };
+    });
   }, [dailyBalances]);
 
-  // Custom event styling
+  // Estilos para cada celda según balance
   const eventPropGetter = (event) => {
-    const bgColor = event.balance >= 0 ? "#F8BBD0" : "#F06292";
-    const textColor = event.balance >= 0 ? "#5D4037" : "#FFF8E1";
+    let bgColor, textColor;
+    if (event.balance > 0) {
+      bgColor = "#F8BBD0"; // positivo: rosa claro
+      textColor = "#5D4037"; // chocolate
+    } else if (event.balance < 0) {
+      bgColor = "#F06292"; // negativo: rosa chicle
+      textColor = "#FFF8E1"; // crema
+    } else {
+      bgColor = "#E0E0E0"; // cero: gris
+      textColor = "#5D4037";
+    }
     return {
       style: {
         backgroundColor: bgColor,
@@ -130,11 +115,9 @@ export default function CalendarView({
     };
   };
 
-  // Restrict navigation to the wide range
   const minDate = getWideRange.start;
   const maxDate = getWideRange.end;
 
-  // Helper to get normalized date string from a calendar date
   const getNormalizedDateStr = (date) => {
     const normalized = startOfDay(date);
     return format(normalized, "yyyy-MM-dd");
@@ -155,20 +138,11 @@ export default function CalendarView({
         max={maxDate}
         eventPropGetter={eventPropGetter}
         onSelectEvent={(event) => {
-          // Normalize the event's start date before passing
           const dateStr = getNormalizedDateStr(event.start);
-          console.log(
-            "Selected event date:",
-            event.start,
-            "-> Normalized:",
-            dateStr
-          ); // Debug log
           onSelectTransaction(null, dateStr);
         }}
         onSelectSlot={({ start }) => {
-          // Normalize the slot's start date before passing
           const dateStr = getNormalizedDateStr(start);
-          console.log("Selected slot date:", start, "-> Normalized:", dateStr); // Debug log
           onSelectTransaction(null, dateStr);
         }}
         selectable
@@ -191,8 +165,7 @@ export default function CalendarView({
         }}
       />
       <p className="mt-2 text-center text-chocolate text-sm italic">
-        Balances shown cumulatively for each day. Click a day to view
-        transactions.
+        Cumulative daily balances shown. Click a day to view transactions.
       </p>
     </div>
   );
