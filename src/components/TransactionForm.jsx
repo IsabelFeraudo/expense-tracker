@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useStore } from "../store";
-import { v4 as uuidv4 } from "uuid";
 
 const initialForm = {
   id: null,
@@ -35,7 +34,7 @@ export default function TransactionForm({ editTransaction, onClose }) {
     setForm((f) => ({ ...f, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.date || !form.concept || !form.amount)
       return alert("Please fill all fields");
@@ -44,7 +43,6 @@ export default function TransactionForm({ editTransaction, onClose }) {
       return alert("Amount must be a positive number");
 
     const transaction = {
-      id: form.id || uuidv4(),
       type: form.type,
       date: form.date,
       concept: form.concept,
@@ -52,9 +50,9 @@ export default function TransactionForm({ editTransaction, onClose }) {
     };
 
     if (form.id) {
-      updateTransaction(form.id, transaction);
+      await updateTransaction(form.id, transaction);
     } else {
-      addTransaction(transaction);
+      await addTransaction(transaction);
     }
     setForm(initialForm);
     if (onClose) onClose();

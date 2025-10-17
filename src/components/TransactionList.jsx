@@ -26,6 +26,7 @@ export default function TransactionList({
   onClose,
 }) {
   const transactions = useStore((state) => state.transactions);
+  const fetchTransactions = useStore((state) => state.fetchTransactions);
   const deleteTransaction = useStore((state) => state.deleteTransaction);
 
   const [editTx, setEditTx] = useState(null);
@@ -55,6 +56,10 @@ export default function TransactionList({
       if (editTx && editTx.id === id) setEditTx(null);
     }
   };
+
+  React.useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
 
   return (
     <div className="bg-pastelPink rounded-2xl p-6 shadow-md max-w-md mx-auto mb-6">

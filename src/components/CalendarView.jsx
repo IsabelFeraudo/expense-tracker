@@ -12,7 +12,7 @@ import {
 import enUS from "date-fns/locale/en-US";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { useStore } from "../store";
-import { computeDailyBalances } from "../utils/calcDailyBalances";
+import { api } from "../api";
 
 const locales = {
   "en-US": enUS,
@@ -57,20 +57,27 @@ export default function CalendarView({
   }, [transactions]);
 
   // Calcular balances diarios acumulados
-  const dailyBalances = useMemo(() => {
+  const dailyBalances = React.useMemo(() => ({}), []);
+  const [balances, setBalances] = React.useState({});
+
+  React.useEffect(() => {
     const { start, end } = getWideRange;
     const normStart = startOfDay(start);
     const normEnd = startOfDay(end);
-    return computeDailyBalances(transactions, {
-      start: normStart,
-      end: normEnd,
-      startingBalance: 0,
-    });
+    const toStr = (d) => format(d, "yyyy-MM-dd");
+    api
+      .getDailyBalances({
+        start: toStr(normStart),
+        end: toStr(normEnd),
+        startingBalance: 0,
+      })
+      .then((data) => setBalances(data))
+      .catch(() => setBalances({}));
   }, [transactions, getWideRange]);
 
   // Crear eventos del calendario (cada día = balance acumulado)
   const events = useMemo(() => {
-    return Object.entries(dailyBalances).map(([dateStr, balance]) => {
+    return Object.entries(balances).map(([dateStr, balance]) => {
       // parse en local, no UTC
       const eventDate = parse(dateStr, "yyyy-MM-dd", new Date());
       return {

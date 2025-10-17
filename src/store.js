@@ -1,50 +1,52 @@
 import { create } from "zustand";
-
-const LOCAL_STORAGE_KEY = "girlyPopBudgetData";
-
-const loadFromLocalStorage = () => {
-  try {
-    const data = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!data) return { transactions: [] };
-    return JSON.parse(data);
-  } catch {
-    return { transactions: [] };
-  }
-};
-
-const saveToLocalStorage = (state) => {
-  localStorage.setItem(
-    LOCAL_STORAGE_KEY,
-    JSON.stringify({ transactions: state.transactions })
-  );
-};
+import { api } from "./api";
 
 export const useStore = create((set, get) => ({
-  transactions: loadFromLocalStorage().transactions || [],
+  transactions: [],
+  loading: false,
+  error: null,
 
-  addTransaction: (transaction) => {
-    set((state) => {
-      const newTransactions = [...state.transactions, transaction];
-      saveToLocalStorage({ transactions: newTransactions });
-      return { transactions: newTransactions };
-    });
+  fetchTransactions: async () => {
+    set({ loading: true, error: null });
+    try {
+      const data = await api.listTransactions();
+      set({ transactions: data, loading: false });
+    } catch (e) {
+      set({ error: e.message || String(e), loading: false });
+    }
   },
 
-  updateTransaction: (id, updated) => {
-    set((state) => {
-      const newTransactions = state.transactions.map((t) =>
-        t.id === id ? { ...t, ...updated } : t
-      );
-      saveToLocalStorage({ transactions: newTransactions });
-      return { transactions: newTransactions };
-    });
+  addTransaction: async (transaction) => {
+    set({ error: null });
+    try {
+      const created = await api.createTransaction(transaction);
+      set((state) => ({ transactions: [...state.transactions, created] }));
+    } catch (e) {
+      set({ error: e.message || String(e) });
+    }
   },
 
-  deleteTransaction: (id) => {
-    set((state) => {
-      const newTransactions = state.transactions.filter((t) => t.id !== id);
-      saveToLocalStorage({ transactions: newTransactions });
-      return { transactions: newTransactions };
-    });
+  updateTransaction: async (id, updated) => {
+    set({ error: null });
+    try {
+      const saved = await api.updateTransaction(id, updated);
+      set((state) => ({
+        transactions: state.transactions.map((t) => (t.id === id ? saved : t)),
+      }));
+    } catch (e) {
+      set({ error: e.message || String(e) });
+    }
+  },
+
+  deleteTransaction: async (id) => {
+    set({ error: null });
+    try {
+      await api.deleteTransaction(id);
+      set((state) => ({
+        transactions: state.transactions.filter((t) => t.id !== id),
+      }));
+    } catch (e) {
+      set({ error: e.message || String(e) });
+    }
   },
 }));
