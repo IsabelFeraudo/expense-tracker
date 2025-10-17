@@ -1,0 +1,58 @@
+{
+"rules": [
+{
+"name": "reactTsCleanCode",
+"description": "Ensure that React + TypeScript code follows clean code practices and conventions",
+"conditions": [
+"Use clear and descriptive variable and function names (camelCase)",
+"Separate components into individual files when possible (PascalCase for component names)",
+"Use hooks correctly, avoiding unnecessary render cycles",
+"Avoid complex logic directly in JSX; extract to functions or custom hooks",
+"Maintain strong typing with TypeScript, avoid using 'any'"
+]
+},
+{
+"name": "djangoPythonSolid",
+"description": "Apply SOLID principles in Django backend development",
+"conditions": [
+"Each class should have a single responsibility (Single Responsibility Principle)",
+"Functions and methods should be small and do one thing",
+"Avoid tight coupling between modules; use dependency injection when appropriate",
+"Follow Open/Closed Principle: open for extension, closed for modification",
+"Use docstrings to describe functions and classes (PascalCase for class names)"
+]
+},
+{
+"name": "databaseSafety",
+"description": "Ensure secure and efficient PostgreSQL database usage",
+"conditions": [
+"Use Django ORM for all database operations",
+"Avoid string concatenation in queries; always parameterize",
+"Add validations and constraints at the model level",
+"Index columns frequently used in filters",
+"Avoid N+1 queries using select_related or prefetch_related"
+]
+},
+{
+"name": "apiContracts",
+"description": "Establish clear rules for frontend-backend interactions",
+"conditions": [
+"Document all endpoints with expected request and response schemas",
+"Validate received data in the backend using Django REST Framework serializers",
+"Use correct HTTP status codes in responses",
+"Handle errors consistently and return clear messages to the frontend"
+]
+},
+{
+"name": "generalCodingBestPractices",
+"description": "Maintain consistency and code quality throughout the project",
+"conditions": [
+"Follow PEP8 for Python and ESLint/Prettier for TypeScript",
+"Avoid code duplication; extract reusable functions",
+"Write unit and integration tests where applicable",
+"Keep commits clear and atomic",
+"Document important decisions in README or internal documentation"
+]
+}
+]
+}
