@@ -86,17 +86,23 @@ export default function CalendarView({
 
   // Estilos para cada celda según balance
   const eventPropGetter = (event) => {
-    let bgColor, textColor;
-    if (event.balance > 0) {
-      bgColor = "#F8BBD0"; // positivo: rosa claro
-      textColor = "#5D4037"; // chocolate
-    } else if (event.balance < 0) {
-      bgColor = "#F06292"; // negativo: rosa chicle
-      textColor = "#FFF8E1"; // crema
-    } else {
-      bgColor = "#E0E0E0"; // cero: gris
+    let bgColor,
       textColor = "#5D4037";
+
+    if (event.balance < 0) {
+      bgColor = "#C2185B"; // fucsia casi rojo para negativos
+      textColor = "#FFF8E1";
+    } else if (event.balance < 100) {
+      bgColor = "#E91E63"; // fucsia fuerte para montos menores a 100
+      textColor = "#FFF8E1";
+    } else if (event.balance >= 500) {
+      bgColor = "#90CAF9"; // azul pastel para >= 500
+    } else if (event.balance >= 300) {
+      bgColor = "#A5D6A7"; // verde pastel para >300
+    } else {
+      bgColor = "#F8BBD0"; // rosa claro por defecto
     }
+
     return {
       style: {
         backgroundColor: bgColor,

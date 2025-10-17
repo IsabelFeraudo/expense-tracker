@@ -9,7 +9,16 @@ import {
   startOfMonth,
   endOfMonth,
   startOfDay,
-} from "date-fns"; // Added startOfDay
+} from "date-fns";
+
+// 💖 FUNCIÓN PARA ASIGNAR COLORES SEGÚN MONTO
+const getAmountColor = (amount) => {
+  if (amount < 0) return "text-pink-700"; // fucsia casi rojo
+  if (amount < 100) return "text-fuchsia-600"; // fucsia fuerte
+  if (amount > 300 && amount < 500) return "text-green-300"; // verde pastel
+  if (amount >= 500) return "text-blue-300"; // azul pastel
+  return "text-chocolate"; // color neutro
+};
 
 export default function TransactionList({
   selectedDate,
@@ -21,7 +30,7 @@ export default function TransactionList({
 
   const [editTx, setEditTx] = useState(null);
 
-  // Filter transactions by selectedDate or currentMonth (normalize for comparison)
+  // Filtra transacciones por fecha o mes actual
   const filteredTx = useMemo(() => {
     if (selectedDate) {
       const selectedDay = startOfDay(parseISO(selectedDate));
@@ -54,7 +63,7 @@ export default function TransactionList({
           ? `Transactions on ${format(
               startOfDay(parseISO(selectedDate)),
               "PPP"
-            )}` // Normalize for display
+            )}`
           : currentMonth
           ? `Transactions in ${format(currentMonth, "MMMM yyyy")}`
           : "All Transactions"}
@@ -80,7 +89,9 @@ export default function TransactionList({
           )}
           <ul className="space-y-3 max-h-96 overflow-y-auto">
             {filteredTx.map((tx) => {
-              const txDay = startOfDay(parseISO(tx.date)); // Normalize for display
+              const txDay = startOfDay(parseISO(tx.date));
+              const colorClass = getAmountColor(tx.amount);
+
               return (
                 <li
                   key={tx.id}
@@ -93,17 +104,10 @@ export default function TransactionList({
                     </p>
                     <p className="text-xs text-chocolate">
                       {format(txDay, "PPP")}
-                    </p>{" "}
-                    {/* Normalized format */}
+                    </p>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <p
-                      className={`font-semibold ${
-                        tx.type === "income"
-                          ? "text-darkPink"
-                          : "text-bubblegumPink"
-                      }`}
-                    >
+                    <p className={`font-semibold ${colorClass}`}>
                       {tx.type === "income" ? "+" : "-"}${tx.amount.toFixed(2)}
                     </p>
                     <button
